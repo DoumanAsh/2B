@@ -23,7 +23,7 @@ features = ["abort-on-panic"]
 
 [dependencies.stm32l4x6-hal]
 features = ["rt", "STM32L476VG"]
-path = "../stm32l4x6_hal"
+version = "0"
 
 [dependencies.cortex-m-semihosting]
 version = "0.2.0"
@@ -41,6 +41,9 @@ incremental = false
 lto = false
 
 [profile.release]
-opt-level = 2
-debug = false
+panic = "abort"
 lto = true
+codegen-units = 1
+incremental = false
+# higher level of optimization seems to break toggle function
+opt-level = 1

@@ -49,12 +49,11 @@ pub fn sys_tick(_t: &mut Threshold, mut r: SYS_TICK::Resources) {
 }
 
 pub fn toggle(_t: &mut Threshold, mut r: TIM16::Resources) {
+    (*r.LED_TIMER).reset_overflow();
     if (*r.LED_RED).is_off() {
         (*r.LED_RED).on();
     }
     else {
         (*r.LED_RED).off();
     }
-
-    (*r.LED_TIMER).reset_overflow();
 }
