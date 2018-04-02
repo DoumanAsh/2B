@@ -49,11 +49,15 @@ pub fn sys_tick(_t: &mut Threshold, mut r: SYS_TICK::Resources) {
 }
 
 pub fn toggle(_t: &mut Threshold, mut r: TIM16::Resources) {
-    (*r.LED_TIMER).reset_overflow();
-    if (*r.LED_RED).is_off() {
-        (*r.LED_RED).on();
+    let timer = &mut *r.LED_TIMER;
+    timer.reset_overflow();
+
+    let led = &mut *r.LED_RED;
+    match led.is_off() {
+        true => led.on(),
+        false => led.off()
     }
-    else {
-        (*r.LED_RED).off();
-    }
+
+    //TODO: in optimization mode I need to reset twice...
+    timer.reset_overflow();
 }

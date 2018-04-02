@@ -46,4 +46,5 @@ lto = true
 codegen-units = 1
 incremental = false
 # higher level of optimization seems to break toggle function
-opt-level = 1
+# 1.26.0-nightly (06fa27d7c 2018-04-01)
+opt-level = "z"
