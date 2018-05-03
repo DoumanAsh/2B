@@ -9,6 +9,7 @@ extern crate cortex_m_rtfm as rtfm;
 use rtfm::{app, Threshold};
 use hal::gpio::stm32l476vg::led;
 use hal::timer;
+//use hal::lcd;
 
 mod tasks;
 
@@ -18,6 +19,7 @@ app! {
         static TICK: u64 = 0;
         static LED_RED: led::Led4;
         static LED_TIMER: timer::Timer<hal::stm32l4x6::TIM16>;
+        //static LCD: lcd::LCD;
     },
     init: {
         path: tasks::init,

@@ -8,6 +8,7 @@ use ::hal::common::Constrain;
 use ::hal::gpio::stm32l476vg;
 use ::hal::timer;
 use ::led::{Led4, Led5};
+//use ::lcd;
 
 ///Runs at the start and is capable of initializing `init::LateResource`
 pub fn init(mut p: init::Peripherals, _r: init::Resources) -> init::LateResources {
@@ -15,15 +16,19 @@ pub fn init(mut p: init::Peripherals, _r: init::Resources) -> init::LateResource
 
     let mut flash = p.device.FLASH.constrain();
     let mut rcc = p.device.RCC.constrain();
-
-    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+    let mut _pwr = p.device.PWR.constrain();
+    //Configre Clocks
+    let clocks = rcc.cfgr.hclk(40_000).freeze(&mut flash.acr);
+    //Configure  timer
     let mut timer = timer::Timer::tim16(p.device.TIM16, 10, clocks, &mut rcc.apb2);
     timer.subscribe(timer::Event::Timeout);
 
+    //Configure source for SYST
     p.core.SYST.set_clock_source(SystClkSource::Core);
     p.core.SYST.enable_interrupt();
     p.core.SYST.enable_counter();
 
+    //Congifure LEDs
     let mut gpio = stm32l476vg::gpio::E::new(&mut rcc.ahb);
     let mut led = Led5::new(gpio.PE8.into_push_pull_output(&mut gpio.moder, &mut gpio.otyper));
     led.on();
@@ -31,9 +36,28 @@ pub fn init(mut p: init::Peripherals, _r: init::Resources) -> init::LateResource
     let led = gpio.PB2.into_push_pull_output(&mut gpio.moder, &mut gpio.otyper);
     let led = Led4::new(led);
 
+    //Configre LCD
+    //let lcd = {
+    //    lcd::LCD::init_lse(&mut rcc.apb1, &mut rcc.ahb, &mut pwr, &mut rcc.bdcr);
+
+    //    let mut config = lcd::config::Config::default();
+    //    config.prescaler = Some(lcd::config::Prescaler::PS_64);
+    //    config.divider = Some(lcd::config::Divider::DIV_17);
+    //    config.duty = Some(lcd::config::Duty::Static);
+    //    config.bias = Some(lcd::config::Bias::Bias13);
+    //    config.contrast = Some(lcd::config::Contrast::Five);
+
+    //    match lcd::LCD::validate(&mut p.device.LCD, &mut rcc.bdcr, &config) {
+    //        lcd::ValidationResult::Ok(_) => lcd::LCD::new(p.device.LCD, config),
+    //        lcd::ValidationResult::SmallFrameRate => panic!("Resulting framerate is too small"),
+    //        lcd::ValidationResult::BigFrameRate => panic!("Resulting framerate is too big"),
+    //        lcd::ValidationResult::ClockNotSet => panic!("Clock is not set for LCD")
+    //    }
+    //};
+
     init::LateResources {
         LED_RED: led,
-        LED_TIMER: timer
+        LED_TIMER: timer,
     }
 }
 ///Kinda main loop that should not exit.
