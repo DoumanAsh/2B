@@ -1,6 +1,14 @@
 #![feature(proc_macro)]
+#![no_main]
 #![no_std]
 
+#[cfg(feature = "debug")]
+extern crate panic_semihosting;
+#[cfg(feature = "release")]
+extern crate panic_abort;
+
+#[macro_use(entry, exception)]
+extern crate cortex_m_rt as rt;
 #[macro_use(block)]
 extern crate nb;
 extern crate stm32l4x6_hal as hal;
@@ -41,6 +49,19 @@ app! {
     }
 }
 
+fn start() -> ! {
+    main();
+    unreachable!();
+}
+
+entry!(start);
+
+// define the default exception handler
+exception!(*, default_handler);
+
+fn default_handler(irqn: i16) {
+    panic!("unhandled exception (IRQn={})", irqn);
+}
 
 //Declared by stm32l4x6 with rt feature
 // As we are not using interrupts, we just register a dummy catch all handler

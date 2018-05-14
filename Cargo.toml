@@ -8,34 +8,40 @@ keywords = ["arm", "cortex-m", "template"]
 license = "Apache-2.0"
 
 [dependencies]
-cortex-m = "0.4"
+cortex-m = "0.5"
+#TODO: wait for RTFM ugprade
 cortex-m-rtfm = "0.3"
-embedded-hal = "0"
-nb = "0"
-# alloc-cortex-m release doesn't use linked_list_allocator v0.5.0 yet.
-# Uncomment for the allocator example.
-#alloc-cortex-m = "0.3.2"
+embedded-hal = "0.2"
+nb = "0.1"
+
+[patch.crates-io]
+stm32l4x6 = { git = 'https://github.com/DoumanAsh/stm32l4x6', branch = "svd_12_1" }
 
 [dependencies.cortex-m-rt]
-version = "0.3"
+version = "0.5"
 # Comment for the panic example.
-features = ["abort-on-panic"]
+features = ["device"]
 
 [dependencies.stm32l4x6-hal]
 features = ["rt", "STM32L476VG"]
 path = "../stm32l4x6_hal"
 
-[dependencies.cortex-m-semihosting]
+[dependencies.panic-semihosting]
 version = "0.2"
 optional = true
 
+[dependencies.panic-abort]
+version = "0.1"
+optional = true
+
 [features]
-default = []
-debug = ["cortex-m-semihosting"]
+default = ["debug"]
+debug = ["panic-semihosting"]
+release = ["panic-abort"]
 
 [profile.dev]
 incremental = false
-lto = true
+lto = false
 
 [profile.release]
 panic = "abort"

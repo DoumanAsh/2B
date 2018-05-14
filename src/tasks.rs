@@ -5,7 +5,16 @@ extern crate cortex_m;
 extern crate cortex_m_rtfm as rtfm;
 
 use ::hal::common::Constrain;
-use ::hal::gpio::stm32l476vg;
+mod gpio {
+    pub use ::hal::gpio::stm32l476vg::gpio::{
+        E, PE8,
+        B, PB2,
+    };
+
+    pub use ::hal::gpio::{
+        PushPull
+    };
+}
 use ::hal::timer;
 use ::led::{Led4, Led5};
 //use ::lcd;
@@ -29,11 +38,11 @@ pub fn init(mut p: init::Peripherals, _r: init::Resources) -> init::LateResource
     p.core.SYST.enable_counter();
 
     //Congifure LEDs
-    let mut gpio = stm32l476vg::gpio::E::new(&mut rcc.ahb);
-    let mut led = Led5::new(gpio.PE8.into_push_pull_output(&mut gpio.moder, &mut gpio.otyper));
+    let mut gpio = gpio::E::new(&mut rcc.ahb);
+    let mut led = Led5::new(gpio.PE8.into_output::<gpio::PushPull>(&mut gpio.moder, &mut gpio.otyper));
     led.on();
-    let mut gpio = stm32l476vg::gpio::B::new(&mut rcc.ahb);
-    let led = gpio.PB2.into_push_pull_output(&mut gpio.moder, &mut gpio.otyper);
+    let mut gpio = gpio::B::new(&mut rcc.ahb);
+    let led = gpio.PB2.into_output::<gpio::PushPull>(&mut gpio.moder, &mut gpio.otyper);
     let led = Led4::new(led);
 
     //Configre LCD
