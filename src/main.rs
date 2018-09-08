@@ -1,74 +1,66 @@
-#![feature(proc_macro)]
 #![no_main]
 #![no_std]
 
+extern crate stm32l4x6_hal as hal;
+extern crate cortex_m;
+extern crate cortex_m_rt;
 #[cfg(feature = "debug")]
 extern crate panic_semihosting;
 #[cfg(feature = "release")]
 extern crate panic_abort;
+#[cfg(feature = "debug")]
+extern crate cortex_m_log;
+extern crate embedded_hal;
 
-#[macro_use(entry, exception)]
-extern crate cortex_m_rt as rt;
-#[macro_use(block)]
-extern crate nb;
-extern crate stm32l4x6_hal as hal;
-extern crate cortex_m_rtfm as rtfm;
+use embedded_hal::digital::{ToggleableOutputPin};
+use cortex_m::asm::wfe;
+use cortex_m_rt::{entry, exception};
 
-use rtfm::{app, Threshold};
-use hal::gpio::stm32l476vg::led;
-use hal::timer;
-//use hal::lcd;
+use core::hint;
 
-mod tasks;
+#[macro_use]
+mod rt;
 
-app! {
-    device: hal::stm32l4x6,
-    resources: {
-        static TICK: u64 = 0;
-        static LED_RED: led::Led4;
-        static LED_TIMER: timer::Timer<hal::stm32l4x6::TIM16>;
-        //static LCD: lcd::LCD;
-    },
-    init: {
-        path: tasks::init,
-    },
+static mut RT: Option<rt::Guard> = None;
 
-    idle: {
-        path: tasks::idle,
-    },
-
-    tasks: {
-        SYS_TICK: {
-            path: tasks::sys_tick,
-            resources: [TICK]
-        },
-        TIM16: {
-            path: tasks::toggle,
-            resources: [LED_RED, LED_TIMER]
+#[inline]
+fn get_rt() -> &'static mut rt::Guard {
+    unsafe {
+        match RT.as_mut() {
+            Some(rt) => rt,
+            None => hint::unreachable_unchecked(),
         }
     }
 }
 
-fn start() -> ! {
-    main();
-    unreachable!();
+#[inline]
+fn init() {
+    unsafe {
+        RT = Some(rt::init())
+    }
 }
 
-entry!(start);
+#[entry]
+fn main() -> ! {
+    init();
 
-// define the default exception handler
-exception!(*, default_handler);
-
-fn default_handler(irqn: i16) {
-    panic!("unhandled exception (IRQn={})", irqn);
+    log!("Initialize firmware");
+    // infinite loop; just so we don't leave this stack frame
+    loop {
+        wfe();
+    }
 }
 
-//Declared by stm32l4x6 with rt feature
-// As we are not using interrupts, we just register a dummy catch all handler
-//#[link_section = ".vector_table.interrupts"]
-//#[used]
-//static INTERRUPTS: [extern "C" fn(); 240] = [default_handler; 240];
-//
-//extern "C" fn default_handler() {
-//    asm::bkpt();
-//}
+#[exception]
+fn DefaultHandler(irqn: i16) {
+    log!("DefaultHandler: IRQn = {}", irqn);
+}
+
+#[exception]
+fn SysTick() {
+    rt::tick::inc();
+
+    let rt = get_rt();
+
+    rt.device.led.red.toggle();
+}
