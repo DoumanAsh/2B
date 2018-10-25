@@ -4,10 +4,10 @@ use ::cortex_m::peripheral as core_pers;
 
 mod device;
 pub mod tick;
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 pub mod log;
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)+) => ({
@@ -16,12 +16,14 @@ macro_rules! log {
     })
 }
 
-#[cfg(feature = "release")]
+#[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)+) => ({
     })
 }
+
+mod panic;
 
 pub struct Guard {
     pub dcb: core_pers::DCB,
@@ -40,7 +42,7 @@ pub fn init() -> Guard {
         None => unsafe { hint::unreachable_unchecked() }
     };
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     {
         log::set_logger();
     }

@@ -20,24 +20,12 @@ features = ["device"]
 version = "0.3"
 features = ["semihosting"]
 
-[dependencies.panic-semihosting]
-version = "0.3"
-optional = true
-
-[dependencies.panic-abort]
-version = "0.3"
-optional = true
-
 [dependencies.stm32l4x6-hal]
 features = ["rt", "STM32L476VG"]
 path = "../stm32l4x6_hal"
-
-[features]
-default = ["debug"]
-debug = ["panic-semihosting"]
-release = ["panic-abort"]
 
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = "z"
+panic = "abort"

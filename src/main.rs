@@ -4,11 +4,7 @@
 extern crate stm32l4x6_hal as hal;
 extern crate cortex_m;
 extern crate cortex_m_rt;
-#[cfg(feature = "debug")]
-extern crate panic_semihosting;
-#[cfg(feature = "release")]
-extern crate panic_abort;
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 extern crate cortex_m_log;
 extern crate embedded_hal;
 
@@ -18,7 +14,6 @@ use cortex_m_rt::{entry, exception};
 
 use core::hint;
 
-#[macro_use]
 mod rt;
 
 static mut RT: Option<rt::Guard> = None;
@@ -51,6 +46,7 @@ fn main() -> ! {
     }
 }
 
+#[allow(unused)]
 #[exception]
 fn DefaultHandler(irqn: i16) {
     log!("DefaultHandler: IRQn = {}", irqn);
