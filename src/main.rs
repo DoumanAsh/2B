@@ -7,7 +7,9 @@ extern crate cortex_m_rt;
 #[cfg(debug_assertions)]
 extern crate cortex_m_log;
 extern crate embedded_hal;
+extern crate nb;
 
+use embedded_hal::serial::{Write};
 use embedded_hal::digital::{ToggleableOutputPin};
 use cortex_m::asm::wfe;
 use cortex_m_rt::{entry, exception};
@@ -30,8 +32,18 @@ fn get_rt() -> &'static mut rt::Guard {
 
 #[inline]
 fn init() {
+    const WELCOME: &'static [u8; 12] = b"Hello world!";
     unsafe {
-        RT = Some(rt::init())
+        let mut rt = rt::init();
+
+        for byte in WELCOME {
+            match nb::block!(rt.device.serial.write(*byte)) {
+                Ok(_) => (),
+                Err(error) => log!("Error while writing welcome: {:?}", error),
+            }
+        }
+
+        RT = Some(rt);
     }
 }
 
@@ -59,4 +71,10 @@ fn SysTick() {
     let rt = get_rt();
 
     rt.device.led.red.toggle();
+}
+
+#[exception]
+fn HardFault(ef: &cortex_m_rt::ExceptionFrame) -> ! {
+    // prints the exception frame as a panic message
+    panic!("{:#?}", ef);
 }

@@ -1,9 +1,16 @@
 use ::hal::stm32l4x6::Peripherals as DevicePeripherals;
 use ::hal::common::Constrain;
 use ::hal::rcc::{clocking, AHB, Clocks};
+use ::hal::serial::Serial;
+use ::hal::time;
 //use ::hal::lcd;
 
 mod gpio {
+    //Serial1
+    pub use ::hal::gpio::{
+        PB6, PB7, PB5, AF7
+    };
+
     pub use ::hal::gpio::stm32l476vg::gpio::{
         E, PE8,
         B, PB2,
@@ -21,13 +28,20 @@ pub fn init() -> Device {
     let mut pwr = pers.PWR.constrain();
 
     let mut flash = pers.FLASH.constrain();
-    let hsi16 = clocking::HighSpeedInternal16RC {
-        always_on: true,
-        auto_start: true,
-    };
-    let clocks = rcc.cfgr.hclk(80_000).sysclk(clocking::SysClkSource::HSI16(hsi16)).freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(clocking::SysClkSource::MSI(clocking::MediumSpeedInternalRC::new(32_000_000, false)))
+                         .hclk(time::MegaHertz(32))
+                         .pclk2(time::MegaHertz(32))
+                         .freeze(&mut flash.acr);
 
     let led = Led::new(&mut rcc.ahb);
+
+    let serial = {
+        let mut gpio = gpio::B::new(&mut rcc.ahb);
+        let tx = gpio.PB6.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
+        let rx = gpio.PB7.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
+        let ck = gpio.PB5.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
+        Serial::new(pers.USART1, (tx, rx, ck), 115_200.into(), &clocks, &mut rcc.apb2)
+    };
 
     //Configre LCD
     //let mut screen = {
@@ -60,7 +74,8 @@ pub fn init() -> Device {
 
     Device {
         led,
-        clocks
+        clocks,
+        serial
     }
 }
 
@@ -90,4 +105,5 @@ impl Led {
 pub struct Device {
     pub led: Led,
     pub clocks: Clocks,
+    pub serial: Serial<::hal::serial::USART1, gpio::PB6<gpio::AF7>, gpio::PB7<gpio::AF7>, gpio::PB5<gpio::AF7>>,
 }
