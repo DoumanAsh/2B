@@ -10,7 +10,7 @@ fn panic(_info: &PanicInfo) -> ! {
 #[cfg(debug_assertions)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    error!("Panic: {}", info);
+    log::error!("Panic: {}", info);
 
     loop {}
 }
