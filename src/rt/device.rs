@@ -30,7 +30,7 @@ pub fn init() -> Device {
     let mut flash = pers.FLASH.constrain();
     let clocks = rcc.cfgr.sysclk(clocking::SysClkSource::MSI(clocking::MediumSpeedInternalRC::new(32_000_000, false)))
                          .hclk(time::MegaHertz(32))
-                         .pclk2(time::MegaHertz(32))
+                         .pclk2(time::MegaHertz(8))
                          .freeze(&mut flash.acr);
 
     let led = Led::new(&mut rcc.ahb);
@@ -40,7 +40,7 @@ pub fn init() -> Device {
         let tx = gpio.PB6.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
         let rx = gpio.PB7.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
         let ck = gpio.PB5.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
-        Serial::new(pers.USART1, (tx, rx, ck), 115_200.into(), &clocks, &mut rcc.apb2)
+        Serial::new(pers.USART1, (tx, rx, ck), 9_600, &clocks, &mut rcc.apb2)
     };
 
     //Configre LCD

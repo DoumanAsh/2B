@@ -10,11 +10,7 @@ fn panic(_info: &PanicInfo) -> ! {
 #[cfg(debug_assertions)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    use cortex_m::asm;
-
-    log!("Panic: {}", info);
-
-    asm::bkpt();
+    error!("Panic: {}", info);
 
     loop {}
 }

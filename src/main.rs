@@ -5,11 +5,13 @@ extern crate stm32l4x6_hal as hal;
 extern crate cortex_m;
 extern crate cortex_m_rt;
 #[cfg(debug_assertions)]
-extern crate cortex_m_log;
+#[macro_use]
+extern crate log;
 extern crate embedded_hal;
 extern crate nb;
 
-use embedded_hal::serial::{Write};
+use hal::serial::RawSerial;
+use embedded_hal::serial::{Read, Write};
 use embedded_hal::digital::{ToggleableOutputPin};
 use cortex_m::asm::wfe;
 use cortex_m_rt::{entry, exception};
@@ -32,14 +34,16 @@ fn get_rt() -> &'static mut rt::Guard {
 
 #[inline]
 fn init() {
-    const WELCOME: &'static [u8; 12] = b"Hello world!";
+    const WELCOME: &'static [u8; 13] = b"Hello world!\n";
     unsafe {
         let mut rt = rt::init();
+        rt.device.serial.subscribe(hal::serial::Event::Rxne);
+        rt.device.serial.subscribe(hal::serial::Event::Txe);
 
         for byte in WELCOME {
             match nb::block!(rt.device.serial.write(*byte)) {
                 Ok(_) => (),
-                Err(error) => log!("Error while writing welcome: {:?}", error),
+                Err(error) => error!("Error while writing welcome: {:?}", error),
             }
         }
 
@@ -51,17 +55,25 @@ fn init() {
 fn main() -> ! {
     init();
 
-    log!("Initialize firmware");
+    info!("Initialize firmware");
     // infinite loop; just so we don't leave this stack frame
     loop {
         wfe();
+        let rt = get_rt();
+        match nb::block!(rt.device.serial.read()) {
+            Ok(byte) => match nb::block!(rt.device.serial.write(byte)) {
+                Ok(_) => (),
+                Err(error) => error!("Error writing: {:?}", error),
+            },
+            Err(error) => error!("Error reading: {:?}", error),
+        }
     }
 }
 
 #[allow(unused)]
 #[exception]
 fn DefaultHandler(irqn: i16) {
-    log!("DefaultHandler: IRQn = {}", irqn);
+    warn!("DefaultHandler: IRQn = {}", irqn);
 }
 
 #[exception]

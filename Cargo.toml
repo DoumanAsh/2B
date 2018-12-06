@@ -16,9 +16,14 @@ nb = "0.1"
 version = "0.6"
 features = ["device"]
 
+[dependencies.log]
+version = "0.4"
+default-features = false
+features = ["max_level_info", "release_max_level_info"]
+
 [dependencies.cortex-m-log]
 version = "0.3"
-features = ["semihosting"]
+features = ["semihosting", "log-integration"]
 
 [dependencies.stm32l4x6-hal]
 features = ["rt", "STM32L476VG"]

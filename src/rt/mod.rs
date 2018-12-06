@@ -6,23 +6,6 @@ mod device;
 pub mod tick;
 #[cfg(debug_assertions)]
 pub mod log;
-
-#[cfg(debug_assertions)]
-#[macro_export]
-macro_rules! log {
-    ($($arg:tt)+) => ({
-        use ::cortex_m_log::printer::Printer;
-        ::rt::log::logger().println(format_args!($($arg)+));
-    })
-}
-
-#[cfg(not(debug_assertions))]
-#[macro_export]
-macro_rules! log {
-    ($($arg:tt)+) => ({
-    })
-}
-
 mod panic;
 
 pub struct Guard {
@@ -52,7 +35,7 @@ pub fn init() -> Guard {
     // Enable SysTick
     pers.SYST.set_clock_source(core_pers::syst::SystClkSource::Core);
     let freq = core_pers::SYST::get_ticks_per_10ms();
-    log!("Set SysTick frequency={}", freq);
+    info!("Set SysTick frequency={}", freq);
     pers.SYST.set_reload(freq);
     pers.SYST.clear_current();
     pers.SYST.enable_counter();
