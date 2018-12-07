@@ -7,8 +7,10 @@ use rtfm::app;
 use log::{error, warn, info};
 use cortex_m_log::printer;
 use cortex_m_rt::{exception};
-use hal::embedded_hal::serial::{Read, Write};
+use hal::embedded_hal::serial::{Write};
+use hal::embedded_hal::digital::ToggleableOutputPin;
 use hal::nb;
+use hal::serial::RawSerial;
 
 type PrinterType = printer::semihosting::InterruptFree<printer::semihosting::hio::HStdout>;
 type LoggerType = cortex_m_log::log::Logger<PrinterType>;
@@ -16,13 +18,21 @@ type LoggerType = cortex_m_log::log::Logger<PrinterType>;
 mod pers;
 mod panic;
 mod utils;
+mod counters;
+
+use self::utils::ResultExt;
+use self::counters::Counters;
+
+const PERIOD: u32 = 8_000_000;
 
 #[app(device = hal::stm32l4x6)]
 const APP: () = {
+    static mut COUNTERS: Counters = Counters::new();
+
     static mut LED: pers::Led = ();
     static mut SERIAL1: pers::Serial1 = ();
 
-    #[init]
+    #[init(schedule = [working])]
     fn init() {
         static mut LOGGER: Option<LoggerType> = None;
 
@@ -44,6 +54,7 @@ const APP: () = {
 
         let mut device = pers::Device::init(device);
         device.led.green.on();
+
         const WELCOME: &'static [u8; 13] = b"Hello world!\n";
         for byte in WELCOME {
             match nb::block!(device.serial1.write(*byte)) {
@@ -52,23 +63,39 @@ const APP: () = {
             }
         }
 
+        match nb::block!(device.serial1.flush()) {
+            Ok(_) => (),
+            Err(error) => error!("Error while flushing welcome: {:?}", error),
+        }
+
+        schedule.working(rtfm::Instant::now() + PERIOD.cycles()).unreach_err();
+
         LED = device.led;
         SERIAL1 = device.serial1;
     }
 
-    #[idle(resources = [SERIAL1])]
+    #[idle(resources = [SERIAL1, COUNTERS])]
     fn idle() -> ! {
         info!("Start application");
         loop {
-            match resources.SERIAL1.read() {
-                Ok(byte) => match nb::block!(resources.SERIAL1.write(byte)) {
-                    Ok(_) => (),
-                    Err(error) => error!("Error while redirecting serial: {:?}", error),
-                },
-                Err(nb::Error::WouldBlock) => cortex_m::asm::wfe(),
-                Err(error) => error!("Error while reading SERIAL1: {:?}", error),
-            }
+            cortex_m::asm::wfe();
+            resources.COUNTERS.interrupt += 1;
         }
+    }
+
+    #[task(resources = [LED], schedule = [working])]
+    fn working() {
+        resources.LED.green.toggle();
+        schedule.working(scheduled + PERIOD.cycles()).unreach_err();
+    }
+
+    #[interrupt]
+    fn USART1() {
+        info!("USART1!");
+    }
+
+    extern "C" {
+        fn LCD();
     }
 };
 

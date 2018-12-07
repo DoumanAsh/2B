@@ -42,7 +42,7 @@ impl Led {
     }
 }
 
-pub type Serial1 = Serial<hal::serial::USART1, gpio::PB6<gpio::AF7>, gpio::PB7<gpio::AF7>, gpio::PB5<gpio::AF7>>;
+pub type Serial1 = Serial<hal::serial::USART1, gpio::PB6<gpio::AF7>, gpio::PB7<gpio::AF7>, hal::serial::DummyPin>;
 pub struct Device {
     pub led: Led,
     pub clocks: Clocks,
@@ -63,8 +63,7 @@ impl Device {
             let mut gpio = gpio::B::new(&mut rcc.ahb);
             let tx = gpio.PB6.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
             let rx = gpio.PB7.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
-            let ck = gpio.PB5.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
-            Serial::new(device.USART1, (tx, rx, ck), 11_520, &clocks, &mut rcc.apb2)
+            Serial::new(device.USART1, (tx, rx, hal::serial::DummyPin), 115_200, &clocks, &mut rcc.apb2)
         };
 
         Self {
