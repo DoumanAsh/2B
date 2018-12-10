@@ -2,7 +2,8 @@ use hal::gpio::stm32l476vg::led::{Led4, Led5};
 use hal::common::Constrain;
 use hal::rcc::{clocking, Clocks};
 use hal::time;
-use hal::serial::Serial;
+use hal::serial::{self, RawSerial, Serial};
+use hal::crc::CRC;
 
 mod gpio {
     pub use ::hal::gpio::{
@@ -47,6 +48,7 @@ pub struct Device {
     pub led: Led,
     pub clocks: Clocks,
     pub serial1: Serial1,
+    pub crc: CRC,
 }
 
 impl Device {
@@ -66,10 +68,15 @@ impl Device {
             Serial::new(device.USART1, (tx, rx, hal::serial::DummyPin), 115_200, &clocks, &mut rcc.apb2)
         };
 
+        serial1.subscribe(serial::Event::Rxne);
+
+        CRC::enable(&mut rcc.ahb);
+
         Self {
             led: Led::new(&mut rcc.ahb),
             clocks,
             serial1,
+            crc: CRC::new(device.CRC),
         }
     }
 }

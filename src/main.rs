@@ -7,10 +7,9 @@ use rtfm::app;
 use log::{error, warn, info};
 use cortex_m_log::printer;
 use cortex_m_rt::{exception};
-use hal::embedded_hal::serial::{Write};
+use hal::embedded_hal::serial::{Read, Write};
 use hal::embedded_hal::digital::ToggleableOutputPin;
 use hal::nb;
-use hal::serial::RawSerial;
 
 type PrinterType = printer::semihosting::InterruptFree<printer::semihosting::hio::HStdout>;
 type LoggerType = cortex_m_log::log::Logger<PrinterType>;
@@ -56,6 +55,7 @@ const APP: () = {
         device.led.green.on();
 
         const WELCOME: &'static [u8; 13] = b"Hello world!\n";
+
         for byte in WELCOME {
             match nb::block!(device.serial1.write(*byte)) {
                 Ok(_) => (),
@@ -74,7 +74,7 @@ const APP: () = {
         SERIAL1 = device.serial1;
     }
 
-    #[idle(resources = [SERIAL1, COUNTERS])]
+    #[idle(resources = [COUNTERS])]
     fn idle() -> ! {
         info!("Start application");
         loop {
@@ -89,9 +89,15 @@ const APP: () = {
         schedule.working(scheduled + PERIOD.cycles()).unreach_err();
     }
 
-    #[interrupt]
+    #[interrupt(resources = [SERIAL1])]
     fn USART1() {
         info!("USART1!");
+
+        //WHY FRAMING ERROR FOR FUCK SAKE!?
+        //match resources.SERIAL1.read() {
+        //    Ok(_) => info!("Got byte"),
+        //    Err(error) => error!("Serial error: {:?}" , error),
+        //}
     }
 
     extern "C" {
