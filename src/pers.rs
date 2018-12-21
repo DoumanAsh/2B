@@ -5,6 +5,11 @@ use hal::time;
 use hal::serial::{self, RawSerial, Serial};
 use hal::crc::CRC;
 
+struct UartConfig;
+impl hal::serial::Config for UartConfig {
+    const BAUD: u32 = 115_200;
+}
+
 mod gpio {
     pub use ::hal::gpio::{
         PB6, PB7, PB5, AF7
@@ -65,10 +70,8 @@ impl Device {
             let mut gpio = gpio::B::new(&mut rcc.ahb);
             let tx = gpio.PB6.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
             let rx = gpio.PB7.into_alt_fun::<gpio::AF7>(&mut gpio.moder, &mut gpio.afrl);
-            Serial::new(device.USART1, (tx, rx, hal::serial::DummyPin), 115_200, &clocks, &mut rcc.apb2)
+            Serial::new(device.USART1, (tx, rx, hal::serial::DummyPin), UartConfig, &clocks, &mut rcc.apb2)
         };
-
-        serial1.subscribe(serial::Event::Rxne);
 
         CRC::enable(&mut rcc.ahb);
 

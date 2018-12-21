@@ -68,6 +68,11 @@ const APP: () = {
             Err(error) => error!("Error while flushing welcome: {:?}", error),
         }
 
+        match nb::block!(device.serial1.read()) {
+            Ok(_) => info!("Got byte"),
+            Err(error) => error!("Error while reading: {:?}", error),
+        }
+
         schedule.working(rtfm::Instant::now() + PERIOD.cycles()).unreach_err();
 
         LED = device.led;
@@ -91,8 +96,6 @@ const APP: () = {
 
     #[interrupt(resources = [SERIAL1])]
     fn USART1() {
-        info!("USART1!");
-
         //WHY FRAMING ERROR FOR FUCK SAKE!?
         //match resources.SERIAL1.read() {
         //    Ok(_) => info!("Got byte"),
