@@ -1,0 +1,31 @@
+[package]
+name = "esp32-c3-no-std"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# HAL provides linker scripts
+[dependencies.esp32c3-hal]
+version = "0.9"
+features = ["ufmt"]
+
+[dependencies.ufmt-stdio]
+version = "0.4"
+features = ["esp-uart"]
+
+[dependencies.atomik]
+version = "1.1"
+features = ["critical-section-polyfill"]
+
+[dependencies]
+critical-section = "1.1.1"
+
+[profile.dev]
+strip = true
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+debug = false

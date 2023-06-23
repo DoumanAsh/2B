@@ -1,0 +1,7 @@
+[target.riscv32imc-unknown-none-elf]
+rustflags = [
+  "-C", "link-arg=-Tlinkall.x", #linker script is defined by esp32-hal
+]
+
+[build]
+target = "riscv32imc-unknown-none-elf"
